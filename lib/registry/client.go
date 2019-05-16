@@ -396,8 +396,10 @@ func (c DockerRegistryClient) pushLayerHelper(layerDigest image.Digest, isConfig
 
 	if isConfig {
 		log.Infof("* Started pushing image config %s", layerDigest)
+		log.Debugf("  To URL %s", URL)
 	} else {
 		log.Infof("* Started pushing layer %s", layerDigest)
+		log.Debugf("  To URL %s", URL)
 	}
 	URL, err = c.pushLayerContent(layerDigest, URL)
 	if err != nil {
@@ -498,7 +500,9 @@ func (c DockerRegistryClient) pushLayerContent(digest image.Digest, location str
 		if err != nil {
 			return location, fmt.Errorf("push layer chunk: %s", err)
 		}
-		start, endInclusive = endInclusive+1, utils.Min(start+pushChunk-1, size-1)
+
+		// start, endInclusive = endInclusive+1, utils.Min(start+pushChunk-1, size-1)
+		start, endInclusive = endInclusive+1, utils.Min(endInclusive+pushChunk-1, size-1)
 	}
 	return location, nil
 }
@@ -511,6 +515,7 @@ func (c DockerRegistryClient) pushOneLayerChunk(location string, start, endInclu
 	chunckSize := endIncluded + 1 - start
 	r = io.LimitReader(r, chunckSize)
 	readerOptions := ratelimit.NewBucketWithRate(c.config.PushRate, 1)
+	log.Debugf("  Pushing layer to URL: %s, start: %d, end: %d", location, start, endIncluded)
 	headers := map[string]string{
 		"Host":           c.registry,
 		"Content-Type":   "application/octet-stream",
@@ -539,6 +544,7 @@ func (c DockerRegistryClient) pushOneLayerChunk(location string, start, endInclu
 	if newLocation == "" {
 		return "", fmt.Errorf("empty layer upload URL")
 	}
+	log.Debugf("  Finished pushing layer to URL: %s, start: %d, end: %d", location, start, endIncluded)
 	return newLocation, nil
 }
 

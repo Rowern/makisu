@@ -321,6 +321,7 @@ func Send(method, rawurl string, options ...SendOption) (resp *http.Response, er
 			continue
 		}
 		if resp.StatusCode >= 500 && !opts.acceptedCodes[resp.StatusCode] {
+			log.Warnf("Retrying request %s: error %d", rawurl, resp.StatusCode)
 			continue
 		}
 		break
@@ -329,7 +330,7 @@ func Send(method, rawurl string, options ...SendOption) (resp *http.Response, er
 		return nil, NetworkError{err}
 	}
 	if !opts.acceptedCodes[resp.StatusCode] {
-		return nil, NewStatusError(resp)
+		return resp, NewStatusError(resp)
 	}
 	return resp, nil
 }
